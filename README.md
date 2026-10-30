@@ -53,6 +53,10 @@ Open <http://127.0.0.1:8000>. By default, the app indexes documents under
 `.html`, and `.htm`. Keep the server on localhost unless you add suitable
 authentication and network protections.
 
+The starter `data/` folder contains four searchable Markdown documents. On a
+fresh local index, startup reports `Indexed 4 documents from data`. Add or edit
+supported files in `data/` to grow your local collection.
+
 ## Download and import the Wikipedia data
 
 The original dataset shard is not included in the repository. Download this

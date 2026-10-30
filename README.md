@@ -89,9 +89,9 @@ redistributed dataset-derived materials.
 ## maker and story 
 It's make by om tayade. it's just 14 years child.on it development phase we have many bug and stop developing this but some things happened and we strat to make it.open-source to this model motive is that I want it free to people and i think i get best support from people we definitely make india own llm model in large-scale and the omean-v2 is coming-soon.
 
-# owner#
+# owner
 OM TAYADE
 
-## support as
+## support us
 download this GitHub repos and use it 
 # thank you #

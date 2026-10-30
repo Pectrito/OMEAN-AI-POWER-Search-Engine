@@ -467,6 +467,12 @@ class LocalSearchEngine:
         row = self._connection.execute("SELECT COUNT(*) AS count FROM documents").fetchone()
         return int(row["count"])
 
+    def local_document_count(self) -> int:
+        row = self._connection.execute(
+            "SELECT COUNT(*) AS count FROM documents WHERE source = 'local'"
+        ).fetchone()
+        return int(row["count"])
+
     def rate_result(self, query: str, source_id: str, relevant: bool) -> dict[str, int | bool]:
         if not isinstance(query, str) or not isinstance(source_id, str):
             raise ValueError("query and source_id must be strings.")

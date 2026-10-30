@@ -11,12 +11,13 @@ fetch("/api/health")
   })
   .then((health) => {
     const model = health.neural_model;
+    const documentStatus = `Searching ${health.local_documents.toLocaleString()} local documents (${health.indexed_documents.toLocaleString()} total).`;
     if (model?.trained) {
-      status.textContent = `Searching ${health.indexed_documents.toLocaleString()} documents · trained ${model.parameters.toLocaleString()}-parameter model.`;
+      status.textContent = `${documentStatus} Trained ${model.parameters.toLocaleString()}-parameter model.`;
     } else if (model?.error) {
-      status.textContent = `Searching ${health.indexed_documents.toLocaleString()} documents. ${model.error} The search app is still available.`;
+      status.textContent = `${documentStatus} ${model.error} The search app is still available.`;
     } else {
-      status.textContent = `Searching ${health.indexed_documents.toLocaleString()} documents.`;
+      status.textContent = documentStatus;
     }
   })
   .catch((error) => {
@@ -76,7 +77,7 @@ form.addEventListener("submit", async (event) => {
     if (!response.ok) throw new Error(`Search failed (${response.status}).`);
     const data = await response.json();
     showResults(data.results);
-    status.textContent = `${data.results.length} result${data.results.length === 1 ? "" : "s"} for “${data.query}”`;
+    status.textContent = `${data.results.length} result${data.results.length === 1 ? "" : "s"} for “${data.query}” · ${data.local_documents.toLocaleString()} local documents indexed.`;
     answer.replaceChildren();
     if (/^(what|who|when|where|why|how|which|define)\b/i.test(query) && data.results.length) {
       const heading = document.createElement("h2");
@@ -125,7 +126,7 @@ document.querySelector("#reindex").addEventListener("click", async () => {
     const response = await fetch("/api/reindex", { method: "POST" });
     if (!response.ok) throw new Error(`Index refresh failed (${response.status}).`);
     const data = await response.json();
-    status.textContent = `Indexed ${data.indexed} local files; ${data.indexed_documents.toLocaleString()} documents searchable. Removed ${data.removed} stale entries.`;
+    status.textContent = `Indexed ${data.local_documents.toLocaleString()} local files; ${data.indexed_documents.toLocaleString()} documents searchable. Removed ${data.removed} stale entries.`;
     if (data.errors.length) status.textContent += ` ${data.errors.length} file(s) could not be indexed.`;
   } catch (error) {
     status.textContent = error.message;

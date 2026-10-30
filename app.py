@@ -10,6 +10,9 @@ from urllib.parse import parse_qs, urlparse
 from search_engine import LocalSearchEngine, crawl_web
 
 
+DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data"
+
+
 class SearchServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], data_dir: Path) -> None:
         super().__init__(address, SearchHandler)
@@ -33,7 +36,16 @@ class SearchHandler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query).get("q", [""])[0].strip()
             with self.server.engine_lock:
                 results = self.server.engine.search(query)
-            self._send_json({"query": query, "results": [result.__dict__ for result in results]})
+                local_documents = self.server.engine.local_document_count()
+                indexed_documents = self.server.engine.document_count()
+            self._send_json(
+                {
+                    "query": query,
+                    "results": [result.__dict__ for result in results],
+                    "local_documents": local_documents,
+                    "indexed_documents": indexed_documents,
+                }
+            )
         elif parsed.path == "/api/health":
             metadata = self.server.engine.model_metadata
             self._send_json(
@@ -47,6 +59,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                         "error": self.server.engine._neural_model_error,
                     },
                     "indexed_documents": self.server.engine.document_count(),
+                    "local_documents": self.server.engine.local_document_count(),
                 }
             )
         else:
@@ -86,6 +99,7 @@ class SearchHandler(BaseHTTPRequestHandler):
             result = self.server.engine.index_directory()
             response = dict(result)
             response["indexed_documents"] = self.server.engine.document_count()
+            response["local_documents"] = self.server.engine.local_document_count()
         self._send_json(response)
 
     def _send_json(self, payload: object, status: int = 200) -> None:
@@ -115,7 +129,12 @@ class SearchHandler(BaseHTTPRequestHandler):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local document search and summarization prototype.")
-    parser.add_argument("--data", type=Path, default=Path("data"), help="Folder containing documents (default: ./data).")
+    parser.add_argument(
+        "--data",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        help="Folder containing documents (default: app's data folder).",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="Interface to bind (default: 127.0.0.1).")
     parser.add_argument("--port", type=int, default=8000, help="HTTP port (default: 8000).")
     parser.add_argument("--crawl", metavar="URL", help="Crawl a small same-origin set of public pages, then exit.")
@@ -137,15 +156,21 @@ def main() -> None:
     if args.index_only:
         engine = LocalSearchEngine(args.data)
         try:
-            print(json.dumps(engine.index_directory(), ensure_ascii=False, indent=2))
+            result = engine.index_directory()
+            result["local_documents"] = engine.local_document_count()
+            result["indexed_documents"] = engine.document_count()
+            print(json.dumps(result, ensure_ascii=False, indent=2))
         finally:
             engine.close()
         return
 
     server = SearchServer((args.host, args.port), args.data)
     try:
-        result = server.engine.index_directory()
-        print(f"Indexed {result['indexed']} documents from {server.data_dir}")
+        server.engine.index_directory()
+        print(
+            f"Indexed {server.engine.local_document_count()} local documents from "
+            f"{server.data_dir} ({server.engine.document_count():,} total searchable documents)"
+        )
         print(f"Search UI: http://{args.host}:{args.port}")
         server.serve_forever()
     except KeyboardInterrupt:

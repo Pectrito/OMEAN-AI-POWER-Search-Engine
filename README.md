@@ -53,9 +53,12 @@ Open <http://127.0.0.1:8000>. By default, the app indexes documents under
 `.html`, and `.htm`. Keep the server on localhost unless you add suitable
 authentication and network protections.
 
-The starter `data/` folder contains four searchable Markdown documents. On a
-fresh local index, startup reports `Indexed 4 documents from data`. Add or edit
-supported files in `data/` to grow your local collection.
+The starter `data/` folder contains four searchable Markdown documents. Startup
+reports the number of local documents separately from the total index (which
+may include the prebuilt Wikipedia corpus). The web page also shows the local
+document count, including after a search. A query can still return zero
+matches; that is the number of matching results, not the number of indexed
+documents. Add or edit supported files in `data/` to grow your collection.
 
 ## Download and import the Wikipedia data
 

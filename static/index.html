@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f9fa">
+    <title>Omean Search</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="brand" aria-label="Omean Search">
+        <span class="brand-blue">O</span><span class="brand-red">m</span><span class="brand-yellow">e</span><span class="brand-blue">a</span><span class="brand-green">n</span>
+        <span class="brand-caption">Search your knowledge</span>
+      </header>
+      <form id="search-form" class="search-form">
+        <label class="sr-only" for="query">Search local documents</label>
+        <input id="query" name="q" type="search" autocomplete="off" placeholder="Search documents and collected pages" required>
+        <button type="submit">Search</button>
+      </form>
+      <div class="toolbar">
+        <span id="status" role="status">Search your indexed data folder.</span>
+        <button id="reindex" class="quiet-button" type="button">Refresh index</button>
+      </div>
+      <aside id="answer" class="answer" aria-live="polite" hidden></aside>
+      <section id="results" class="results" aria-live="polite"></section>
+      <footer>Local-first search · BM25 ranking · Optional trained neural ranking and summaries</footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

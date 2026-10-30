@@ -1,0 +1,8 @@
+Training data: Wikimedia Wikipedia dataset, 2023-11-01 English configuration, shard 0 of 41.
+Dataset card: https://huggingface.co/datasets/wikimedia/wikipedia
+License listed by the dataset card: CC BY-SA 3.0 and GNU Free Documentation License.
+Shard SHA-256: 382e7f6f09e488b24793a7f7cfc659879d5a22da2cf2efec6491665f0c019677
+
+Wikipedia articles are written by their respective contributors. Follow the
+applicable attribution and share-alike terms when redistributing the data or
+derived materials.

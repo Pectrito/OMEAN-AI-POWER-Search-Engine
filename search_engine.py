@@ -27,6 +27,7 @@ MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 MAX_PAGE_BYTES = 1024 * 1024
 MAX_CRAWL_PAGES = 50
 CRAWL_DELAY_SECONDS = 1.0
+GIT_LFS_POINTER_HEADER = b"version https://git-lfs.github.com/spec/v1\n"
 TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
 SENTENCE_PATTERN = re.compile(r"(?<=[.!?])\s+|\n+")
 SUMMARY_STOP_WORDS = {
@@ -207,11 +208,32 @@ class SearchResult:
     source_id: str
 
 
+def _remove_unresolved_lfs_pointer(database_path: Path) -> bool:
+    try:
+        with database_path.open("rb") as database_file:
+            first_line = database_file.readline(len(GIT_LFS_POINTER_HEADER) + 1)
+    except FileNotFoundError:
+        return False
+
+    is_pointer = first_line.rstrip(b"\r\n") == GIT_LFS_POINTER_HEADER.rstrip(b"\n")
+    if not is_pointer:
+        return False
+
+    database_path.unlink()
+    logging.getLogger(__name__).warning(
+        "%s is a Git LFS pointer, not a SQLite database. Creating a new local index. "
+        "To get the prebuilt index, clone the repository with Git LFS enabled.",
+        database_path,
+    )
+    return True
+
+
 class LocalSearchEngine:
     def __init__(self, data_dir: Path) -> None:
         self.data_dir = data_dir.resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.database_path = self.data_dir / "search-index.sqlite3"
+        _remove_unresolved_lfs_pointer(self.database_path)
         self._connection = sqlite3.connect(self.database_path, check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute(

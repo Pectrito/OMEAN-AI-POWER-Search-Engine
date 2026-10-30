@@ -23,6 +23,14 @@ wrong; check important claims against the source documents. Search remains
 available with BM25 and extractive summaries when neural inference is
 unavailable.
 
+The app itself uses Python's standard library. Neural inference is optional;
+install a PyTorch build compatible with your Python version to load the
+checkpoint:
+
+```powershell
+python -m pip install torch
+```
+
 ## Run the app
 
 Requirements: Python 3.10 or newer. Clone with Git LFS enabled to retrieve the
@@ -34,6 +42,11 @@ git clone https://github.com/gammabyblackskyofficial1/OMEAN-AI-POWER-Search-Engi
 cd OMEAN-AI-POWER-Search-Engine
 python app.py
 ```
+
+If you use GitHub's **Download ZIP** instead, Git LFS files may be placeholder
+pointers rather than the full SQLite database. The app detects the pointer,
+creates a fresh local index, and continues. To get the prebuilt index, use the
+Git LFS clone commands above.
 
 Open <http://127.0.0.1:8000>. By default, the app indexes documents under
 `data/`. Supported file types include `.txt`, `.md`, `.rst`, `.csv`, `.json`,

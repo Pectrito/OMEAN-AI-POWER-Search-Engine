@@ -1,0 +1,81 @@
+# Omean Search
+
+A local-first search prototype that indexes documents in `data/`, ranks results with BM25, and displays query-focused summaries. Optional **Helpful** / **Not relevant** feedback trains and persists a small supervised logistic ranking model. A separate, optional neural model can be trained to rank query/document matches and generate summaries. Local documents are not sent to an external service.
+
+## Requirements
+
+- Python 3.10 or newer
+
+## Run
+
+```powershell
+python app.py
+```
+
+Open <http://127.0.0.1:8000>. Put `.txt`, `.md`, `.rst`, `.csv`, `.json`, `.html`, or `.htm` files in `data/`; select **Refresh index** after adding or changing files. The index is stored in `data/search-index.sqlite3`.
+
+The server binds to localhost by default. Keep it on localhost unless you add authentication and appropriate network protections before exposing it to other users.
+
+The search app itself uses Python's standard library. If a trained neural checkpoint exists but PyTorch is missing from the selected Python environment, the app still starts and falls back to BM25 ranking and extractive summaries, while reporting why the neural model was skipped. To use the trained model, install a PyTorch build supported by your Python version or run the app with the Python environment that already has PyTorch installed.
+
+## Add the full downloaded Wikipedia shard to search
+
+The training shard is not automatically part of the search index. To import its 156,000+ articles into the local full-text index, install the small data-import dependency and run:
+
+```powershell
+py -m pip install -r requirements-data.txt
+py import_wikipedia.py
+```
+
+The importer reuses `data/training/wikipedia-20231101-en-00000.parquet`, so it does not download the data again. Importing the complete shard increases the SQLite index size; allow sufficient free disk space. Search uses SQLite FTS5 so queries stay indexed as the corpus grows. After import, restart the app and try **“What is AI?”**. Questions display a quick answer extracted from the top matching article.
+
+## Collect a small set of public web pages
+
+```powershell
+python app.py --crawl https://example.org/ --max-pages 10
+```
+
+The crawler is intentionally bounded to 1–50 pages on the seed URL's origin, waits between requests, checks `robots.txt`, accepts HTML pages only, and rejects local/private network destinations. Downloaded pages are stored under `data/web/` and indexed. Use only sites you are authorized to access; this prototype is not a general-purpose web crawler or a search index of the internet.
+
+## Rebuild the index without starting the server
+
+```powershell
+python app.py --index-only
+```
+
+## Tests
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+## Train the neural model
+
+Run training with a Python environment that has PyTorch installed. In this workspace, Python 3.14 is already configured for training (PyTorch 2.11 CPU and pyarrow 23):
+
+```powershell
+py -3.14 .\train_model.py
+```
+
+Python 3.15 currently lacks PyTorch here, so running `train_model.py` with that interpreter will not work. The script prints the Python 3.14 command if PyTorch is unavailable. For another Python environment, install the training dependencies into that same interpreter and use it to start training:
+
+```powershell
+py -3.14 -m pip install -r requirements-training.txt
+py -3.14 .\train_model.py
+```
+
+This downloads one **420,296,449-byte** English Wikipedia Parquet shard (about 401 MiB), verifies its SHA-256 checksum, and trains from scratch. Training is multi-task: article titles act as weak search queries, unrelated articles provide negative ranking examples, and the first two article sentences are used as summary targets. The model has **1,000,061 trainable parameters** and uses a shared Transformer encoder/decoder for ranking and generated summaries. Training runs on CUDA when available and otherwise on CPU. The defaults use 5,000 optimizer steps; `--steps`, `--batch-size`, `--threads`, and `--max-examples` can be adjusted.
+
+The trained checkpoint and metrics are saved to `data/training-output/`, outside the public bundle. The app loads a locally retrained checkpoint there first, then the published checkpoint in `omean/`. Existing checkpoints at `data/omean/` and `data/multitask-search-model.pt` are still supported. The original dataset file is kept in `data/training/`.
+
+### Dataset source and license
+
+The training shard is from the English 2023-11-01 configuration of the [Wikimedia Wikipedia dataset on Hugging Face](https://huggingface.co/datasets/wikimedia/wikipedia), shard 0 of 41. The dataset card lists **CC BY-SA 3.0** and **GFDL**. Wikipedia text is contributed by Wikipedia authors; follow the applicable attribution and share-alike terms if you redistribute derived data or model artifacts. The shard's SHA-256 is `382e7f6f09e488b24793a7f7cfc659879d5a22da2cf2efec6491665f0c019677`.
+
+The self-contained application bundle, trained model, sample document, and attribution notice are in [`omean/`](omean/README.md). It includes an inference-only runtime and static UI, but excludes training scripts, training metrics, the downloaded Parquet shard, and the generated SQLite search index.
+
+### Limitations
+
+This is a small educational model, not Google Search. The query labels are generated from article titles rather than real user searches, and negative documents are sampled automatically; this is weak supervision, not a human relevance benchmark. Summaries are generated by a small model trained on Wikipedia lead sentences and can be inaccurate or incoherent. The 420 MB file is one shard, not the full Wikipedia dataset. Evaluate the model on your own documents and relevance judgments before relying on its results.
+
+The separate click-feedback learner remains available and does not require the neural training dependencies. It activates after at least eight saved relevance labels, including both relevant and not-relevant examples.

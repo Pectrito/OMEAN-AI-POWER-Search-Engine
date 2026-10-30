@@ -49,24 +49,6 @@ python app.py --index-only
 python -m unittest discover -s tests -v
 ```
 
-## Train the neural model
-
-Run training with a Python environment that has PyTorch installed. In this workspace, Python 3.14 is already configured for training (PyTorch 2.11 CPU and pyarrow 23):
-
-```powershell
-py -3.14 .\train_model.py
-```
-
-Python 3.15 currently lacks PyTorch here, so running `train_model.py` with that interpreter will not work. The script prints the Python 3.14 command if PyTorch is unavailable. For another Python environment, install the training dependencies into that same interpreter and use it to start training:
-
-```powershell
-py -3.14 -m pip install -r requirements-training.txt
-py -3.14 .\train_model.py
-```
-
-This downloads one **420,296,449-byte** English Wikipedia Parquet shard (about 401 MiB), verifies its SHA-256 checksum, and trains from scratch. Training is multi-task: article titles act as weak search queries, unrelated articles provide negative ranking examples, and the first two article sentences are used as summary targets. The model has **1,000,061 trainable parameters** and uses a shared Transformer encoder/decoder for ranking and generated summaries. Training runs on CUDA when available and otherwise on CPU. The defaults use 5,000 optimizer steps; `--steps`, `--batch-size`, `--threads`, and `--max-examples` can be adjusted.
-
-The trained checkpoint and metrics are saved to `data/training-output/`, outside the public bundle. The app loads a locally retrained checkpoint there first, then the published checkpoint in `omean/`. Existing checkpoints at `data/omean/` and `data/multitask-search-model.pt` are still supported. The original dataset file is kept in `data/training/`.
 
 ### Dataset source and license
 
